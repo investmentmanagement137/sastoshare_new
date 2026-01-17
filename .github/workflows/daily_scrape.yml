@@ -1,6 +1,8 @@
 name: Daily Mutual Fund Scraper
 
 on:
+  push:
+    branches: [ "main", "master" ]
   schedule:
     # Runs at 6 AM every day (UTC time? No, Nepal is UTC+5:45)
     # 6 AM Nepal Time = 12:15 AM UTC approx.
