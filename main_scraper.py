@@ -226,7 +226,7 @@ def scrape_debentures():
                 if rows:
                     today_str = datetime.now().strftime("%d-%m-%Y")
                     filename = f"debenture-sastoshare-{today_str}.csv"
-                    with open(filename, 'w', newline='', encoding='utf-8') as f:
+                    with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
                         writer = csv.writer(f)
                         writer.writerow(headers)
                         writer.writerows(rows)
