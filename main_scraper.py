@@ -102,6 +102,7 @@ def scrape_main_sections():
                                 writer.writerow(headers)
                                 writer.writerows(rows)
                             print(f"Saved {filename}")
+                            print(f"Debug: Headers found for {section['name']}: {headers}")
                             upload_to_supabase(filename)
                             
                             if section['name'] == "Stock_Holdings_Fund_PE_Ratio":
@@ -127,8 +128,11 @@ def scrape_detailed_holdings(stock_holdings_file):
 
     print("Reading symbols for detailed scraping...")
     funds = []
-    with open(stock_holdings_file, 'r', encoding='utf-8') as f:
+    # Read with utf-8-sig to handle BOM if present
+    with open(stock_holdings_file, 'r', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
+        if reader.fieldnames:
+             print(f"Debug: Headers in {stock_holdings_file}: {reader.fieldnames}")
         for row in reader:
              # Ensure we have Symbol and Name
             if 'Symbol' in row and 'Name' in row:
