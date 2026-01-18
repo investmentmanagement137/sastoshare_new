@@ -97,7 +97,7 @@ def scrape_main_sections():
                         
                         if rows:
                             filename = f"{section['name']}-{today_str}.csv"
-                            with open(filename, 'w', newline='', encoding='utf-8') as f:
+                            with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
                                 writer = csv.writer(f)
                                 writer.writerow(headers)
                                 writer.writerows(rows)
@@ -163,7 +163,7 @@ def scrape_detailed_holdings(stock_holdings_file):
                     df = dfs[0]
                     safe_name = sanitize_filename(name)
                     filename = f"assets-{symbol}-{safe_name}-{today_str}.csv"
-                    df.to_csv(filename, index=False)
+                    df.to_csv(filename, index=False, encoding='utf-8-sig')
                     print(f"Saved {filename}")
                     upload_to_supabase(filename)
             else:
@@ -179,7 +179,7 @@ def scrape_detailed_holdings(stock_holdings_file):
     print(f"\nScraping Summary: {len(funds) - len(failed_funds)} succeeded, {len(failed_funds)} failed.")
     if failed_funds:
         print("Writing failures to 'scraping_errors.log'...")
-        with open('scraping_errors.log', 'w', encoding='utf-8') as f:
+        with open('scraping_errors.log', 'w', encoding='utf-8-sig') as f:
             for fail in failed_funds:
                 f.write(fail + '\n')
             f.write(f"\nTotal Funds Attempted: {len(funds)}\n")
