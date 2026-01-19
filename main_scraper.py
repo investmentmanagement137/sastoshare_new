@@ -272,7 +272,7 @@ def scrape_debentures():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='NepseAlpha Mutual Fund Scraper')
-    parser.add_argument('--task', type=str, required=True, choices=['daily', 'detailed'], help='Task to run: "daily" or "detailed"')
+    parser.add_argument('--task', type=str, default='all', choices=['daily', 'detailed', 'all'], help='Task to run: "daily", "detailed", or "all" (default)')
     args = parser.parse_args()
 
     print(f"Starting Scraper with task: {args.task}")
@@ -284,6 +284,13 @@ if __name__ == "__main__":
     elif args.task == 'detailed':
         # Detailed scraping needs the stock list from main sections
         stock_csv = scrape_main_sections()
+        if stock_csv:
+            scrape_detailed_holdings(stock_csv)
+
+    elif args.task == 'all':
+        print("Running ALL scraping tasks...")
+        stock_csv = scrape_main_sections()
+        scrape_debentures()
         if stock_csv:
             scrape_detailed_holdings(stock_csv)
     
