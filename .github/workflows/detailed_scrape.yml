@@ -31,6 +31,7 @@ jobs:
         
     - name: Run Detailed Scraper
       env:
+        PYTHONUNBUFFERED: 1
         SUPABASE_ACCESS_KEY_ID: ${{ secrets.SUPABASE_ACCESS_KEY_ID }}
         SUPABASE_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_SECRET_ACCESS_KEY }}
       run: python main_scraper.py --task detailed
