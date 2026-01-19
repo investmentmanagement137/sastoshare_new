@@ -57,6 +57,10 @@ All tables use the DataTables library. To see all data, you typically need to se
 1.  **Handling Dropdowns**: The "Show entries" dropdown is a standard `<select>` element. Changing it triggers a table redraw.
 2.  **Waiting**: Always wait for specific elements (like the table ID) to be visible before parsing. The site is a SPA (Single Page App) in parts, or uses heavy AJAX.
 3.  **Bot Detection**: The site uses Cloudflare. Simple `requests` often fail on protected pages like `/debenture`. Playwright (headed) or `cloudscraper` is recommended.
+4.  **Rate Limiting**: Rapid requests to detail pages (e.g., iterating through all funds) triggers **403 Forbidden** blocks.
+    - **Solution**: Use random delays (3-8 seconds) between requests.
+    - **Retry Logic**: Implement exponential backoff for 403 responses.
+    - **Timeouts**: Ensure your scraping job has a sufficient timeout (e.g., 30+ mins) to accommodate these delays.
 
 ## Machine Readable Selectors
 See [selectors.json](./selectors.json) for a JSON representation of these selectors for use in scripts.

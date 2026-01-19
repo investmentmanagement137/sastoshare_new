@@ -146,10 +146,12 @@ def scrape_detailed_holdings(stock_holdings_file):
     
     start_time = time.time()
     
+    import random
+    
     for idx, fund in enumerate(funds):
-        # Check execution time (limit to 9 mins 30 sec to allow graceful exit)
-        if time.time() - start_time > 570:
-            print("\n[WARNING] Time limit approaching (9.5 mins). Stopping detailed scraping gracefully.")
+        # Check execution time (limit to 25 mins to allow for slower requests)
+        if time.time() - start_time > 1500:
+            print("\n[WARNING] Time limit approaching (25 mins). Stopping detailed scraping gracefully.")
             failed_funds.append("BATCH STOPPED: Time Limit Exceeded")
             break
 
@@ -158,26 +160,47 @@ def scrape_detailed_holdings(stock_holdings_file):
         url = f"https://nepsealpha.com/mutual-fund-navs/{symbol}?fsk=fs"
         
         print(f"[{idx+1}/{len(funds)}] Process {symbol}...")
-        try:
-            resp = scraper.get(url, timeout=30)
-            if resp.status_code == 200:
-                from io import StringIO
-                dfs = pd.read_html(StringIO(resp.text))
-                if dfs:
-                    df = dfs[0]
-                    safe_name = sanitize_filename(name)
-                    filename = f"assets-{symbol}-{safe_name}-{today_str}.csv"
-                    df.to_csv(filename, index=False, encoding='utf-8-sig')
-                    print(f"Saved {filename}")
-                    upload_to_supabase(filename)
-            else:
-                print(f"Failed {symbol}: {resp.status_code}")
-                failed_funds.append(f"{symbol}: HTTP {resp.status_code}")
-            time.sleep(0.5) 
-        except Exception as e:
-             # Just log simple error to avoid clutter
-            print(f"Error {symbol}: {e}")
-            failed_funds.append(f"{symbol}: Error - {e}")
+        
+        # Retry logic with exponential backoff
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                resp = scraper.get(url, timeout=30)
+                if resp.status_code == 200:
+                    from io import StringIO
+                    dfs = pd.read_html(StringIO(resp.text))
+                    if dfs:
+                        df = dfs[0]
+                        safe_name = sanitize_filename(name)
+                        filename = f"assets-{symbol}-{safe_name}-{today_str}.csv"
+                        df.to_csv(filename, index=False, encoding='utf-8-sig')
+                        print(f"Saved {filename}")
+                        upload_to_supabase(filename)
+                    break  # Success, exit retry loop
+                elif resp.status_code == 403:
+                    if attempt < max_retries - 1:
+                        wait_time = (attempt + 1) * 10 + random.uniform(5, 15)
+                        print(f"  Rate limited (403). Waiting {wait_time:.1f}s before retry {attempt + 2}/{max_retries}...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"Failed {symbol}: {resp.status_code} after {max_retries} attempts")
+                        failed_funds.append(f"{symbol}: HTTP {resp.status_code}")
+                else:
+                    print(f"Failed {symbol}: {resp.status_code}")
+                    failed_funds.append(f"{symbol}: HTTP {resp.status_code}")
+                    break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 5
+                    print(f"  Error, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"Error {symbol}: {e}")
+                    failed_funds.append(f"{symbol}: Error - {e}")
+        
+        # Random delay between requests (3-8 seconds) to avoid rate limiting
+        delay = random.uniform(3, 8)
+        time.sleep(delay)
 
     # Report failures
     print(f"\nScraping Summary: {len(funds) - len(failed_funds)} succeeded, {len(failed_funds)} failed.")
@@ -247,9 +270,21 @@ def scrape_debentures():
         print(f"Error scraping debentures: {e}")
 
 if __name__ == "__main__":
-    print("Starting Main Scraper...")
-    stock_csv = scrape_main_sections()
-    scrape_debentures()
-    if stock_csv:
-        scrape_detailed_holdings(stock_csv)
+    import argparse
+    parser = argparse.ArgumentParser(description='NepseAlpha Mutual Fund Scraper')
+    parser.add_argument('--task', type=str, required=True, choices=['daily', 'detailed'], help='Task to run: "daily" or "detailed"')
+    args = parser.parse_args()
+
+    print(f"Starting Scraper with task: {args.task}")
+
+    if args.task == 'daily':
+        scrape_main_sections()
+        scrape_debentures()
+    
+    elif args.task == 'detailed':
+        # Detailed scraping needs the stock list from main sections
+        stock_csv = scrape_main_sections()
+        if stock_csv:
+            scrape_detailed_holdings(stock_csv)
+    
     print("All tasks completed.")

@@ -1,18 +1,16 @@
-name: Daily Mutual Fund Scraper
+name: Detailed Mutual Fund Holdings Scraper
 
 on:
-  push:
-    branches: [ "main", "master" ]
   schedule:
-    # Runs at 6 PM Nepal Time every day
-    # 6:00 PM NPT (UTC+5:45) = 12:15 PM UTC.
-    - cron: '15 12 * * *'
+    # Runs at 6 PM Nepal Time every 2 days
+    # "*/2" in the day-of-month field means every 2 days.
+    - cron: '15 12 */2 * *'
   workflow_dispatch: # Allows manual run
 
 jobs:
-  scrape:
+  scrape_detailed:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45 # Allow extra time for rate-limited detailed scraping
     
     steps:
     - name: Checkout code
@@ -29,15 +27,15 @@ jobs:
         pip install -r requirements.txt
         playwright install chromium
         
-    - name: Run Scraper
+    - name: Run Detailed Scraper
       env:
         SUPABASE_ACCESS_KEY_ID: ${{ secrets.SUPABASE_ACCESS_KEY_ID }}
         SUPABASE_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_SECRET_ACCESS_KEY }}
-      run: python main_scraper.py --task daily
+      run: python main_scraper.py --task detailed
       
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: mutual-fund-data
+        name: detailed-holdings-data
         path: "*.csv"
         retention-days: 5
