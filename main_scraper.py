@@ -348,6 +348,7 @@ if __name__ == "__main__":
     elif args.task == 'detailed':
         # Detailed scraping needs the stock list from main sections
         stock_csv = scrape_main_sections()
+        scrape_debentures()
         if stock_csv:
             scrape_detailed_holdings(stock_csv)
 
