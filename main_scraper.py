@@ -193,12 +193,24 @@ def scrape_detailed_holdings(stock_holdings_file):
                         time.sleep(2)
                         html = page.content()
                         
-                        # Check for Cloudflare block
+                        # Check for Cloudflare challenge and wait for it to complete
+                        cloudflare_failed = False
                         if "Just a moment" in html or "Checking your browser" in html:
-                            print(f"  Cloudflare challenge for {symbol}.")
-                            rate_limited = True
-                            consecutive_failures += 1
-                        else:
+                            print(f"  Cloudflare challenge detected for {symbol}. Waiting for auto-solve...")
+                            try:
+                                # Wait up to 15 seconds for a table to appear (real content)
+                                page.wait_for_selector("table", timeout=15000)
+                                time.sleep(2)  # Extra wait for full page load
+                                html = page.content()
+                                print(f"  Cloudflare challenge solved for {symbol}.")
+                            except:
+                                print(f"  Cloudflare challenge NOT solved for {symbol}.")
+                                cloudflare_failed = True
+                                rate_limited = True
+                                consecutive_failures += 1
+                        
+                        # Parse tables if we have real content
+                        if not cloudflare_failed:
                             dfs = pd.read_html(StringIO(html))
                             if dfs:
                                 df = dfs[0]
